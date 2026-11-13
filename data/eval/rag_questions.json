@@ -1,0 +1,22 @@
+[
+ {"id": 1, "question": "Is zero depreciation included in my base plan?", "expected": [["optional add-on covers", "zero depreciation"], ["zero depreciation add-on", "waives"]], "answer_keywords": ["add-on", "optional"]},
+ {"id": 2, "question": "What is the waiting period for Acko health insurance?", "expected": [["five key waiting periods"], ["initial / cooling-off", "30 days from inception"]], "answer_keywords": ["30 day", "30-day", "36 month"]},
+ {"id": 3, "question": "How do I file a claim for my car?", "expected": [["how do i register a claim with acko"], ["chapter 9 - claims procedure and settlement"]], "answer_keywords": ["acko app", "app", "register"]},
+ {"id": 4, "question": "What add-ons are available for bike insurance?", "expected": [["optional add-on covers"], ["pillion rider pa cover", "should i buy"], ["pillion pa"], ["which motor insurance add-ons are most important"]], "answer_keywords": ["zero dep", "engine", "pillion", "roadside"]},
+ {"id": 5, "question": "Does my bike insurance cover theft if I forgot to lock it?", "expected": [["covered: accidental damage to your bike"], ["bike", "theft", "fir"]], "answer_keywords": ["theft", "stolen"]},
+ {"id": 6, "question": "How soon must I report a stolen car to the police and to Acko?", "expected": [["fir must be filed within 24 hours"], ["intimated within 24 hours"], ["within 24 hours): inform acko"], ["theft", "24 hours"]], "answer_keywords": ["24 hours"]},
+ {"id": 7, "question": "How many claims per year can I make with the Zero Depreciation add-on?", "expected": [["2 claims per policy year"], ["2 claims per year"]], "answer_keywords": ["2 claims", "two claims", "2 times", "twice"]},
+ {"id": 8, "question": "Can I change the IDV that Acko calculates for my car?", "expected": [["idv", "+/-15%"]], "answer_keywords": ["15%"]},
+ {"id": 9, "question": "When does Acko treat a vehicle as a total loss?", "expected": [["75% of idv"], ["total loss", "75%"]], "answer_keywords": ["75%"]},
+ {"id": 10, "question": "How far will Roadside Assistance tow my car?", "expected": [["towing", "50 km"]], "answer_keywords": ["50 km", "50km"]},
+ {"id": 11, "question": "What happens to my No Claim Bonus if I make a claim?", "expected": [["od claim", "resets to 0%"], ["resets ncb to 0%"], ["ncb resets to 0%"]], "answer_keywords": ["0%", "reset"]},
+ {"id": 12, "question": "What is the initial waiting period in Acko health insurance?", "expected": [["30-day waiting period"], ["30 days from inception"], ["initial waiting period", "30 days"]], "answer_keywords": ["30 day", "30-day"]},
+ {"id": 13, "question": "How long is the waiting period for pre-existing diseases?", "expected": [["ped waiting period 36 months"], ["pre-existing", "36 months"]], "answer_keywords": ["36 months", "3 years", "three years"]},
+ {"id": 14, "question": "How long is the free look period for a new health policy?", "expected": [["free look", "15 days"], ["free look", "15-day"]], "answer_keywords": ["15"]},
+ {"id": 15, "question": "What is the grace period for renewing a health policy?", "expected": [["grace period", "30 days"], ["30-day period after policy expiry"]], "answer_keywords": ["30"]},
+ {"id": 16, "question": "How many cashless network hospitals does Acko have?", "expected": [["10,000+", "hospital"]], "answer_keywords": ["10,000"]},
+ {"id": 17, "question": "What co-payment do senior citizens above 60 have to pay?", "expected": [["20% co-pay", "60"], ["20% co-payment", "60"], ["20% co-pay", "senior"], ["20% co-payment", "senior"]], "answer_keywords": ["20%"]},
+ {"id": 18, "question": "Is car insurance mandatory in India and what is the penalty for not having it?", "expected": [["motor vehicles act", "2,000"], ["fine of inr 2,000"], ["section 146"]], "answer_keywords": ["mandatory", "2,000"]},
+ {"id": 19, "question": "Does car insurance cover engine damage from flooding?", "expected": [["hydrostatic", "engine protection"], ["hydrostatic", "consequential"]], "answer_keywords": ["engine protection", "hydrostatic", "add-on"]},
+ {"id": 20, "question": "How do I cancel my Acko policy and get a refund?", "expected": [["cancel policy"], ["short-rate"]], "answer_keywords": ["refund"]}
+]
