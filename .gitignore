@@ -1,0 +1,16 @@
+# Secrets and local settings - never commit these
+.env
+*.pem
+.streamlit/secrets.toml
+
+# Python and tools
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Local data and files the project can rebuild
+acko.db
+chroma_db/
+uploads/
+data/raw/
