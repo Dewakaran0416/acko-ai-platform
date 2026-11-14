@@ -5,7 +5,7 @@ import uuid
 
 import streamlit as st
 
-from acko import db, rag
+from acko import db, quote_ui, rag
 
 EXAMPLES = [
     "Is zero depreciation included in my base plan?",
@@ -48,13 +48,19 @@ def show_sources(sources: list[dict]) -> None:
                 st.caption(source["text"][:400] + ("..." if len(source["text"]) > 400 else ""))
 
 
-def show_next_step(intent: str) -> None:
+def show_next_step(intent: str, key: str, prefill: dict | None = None) -> None:
+    """Under a quotation or claims answer: a link to the page that does the job."""
     if intent in NEXT_STEP:
         page_file, label, not_ready = NEXT_STEP[intent]
-        if page_file in st.session_state.get("pages", []):
-            st.page_link(page_file, label=label)
-        else:
+        if page_file not in st.session_state.get("pages", []):
             st.info(not_ready)
+        elif prefill:       # the question already named vehicle details: open the form with them filled in
+            st.caption(f"I picked this up from your question: {prefill['text']}. The form opens with it filled in.")
+            if st.button(label, key=key, icon=":material/arrow_forward:"):
+                st.session_state["quote_prefill"] = prefill
+                st.switch_page(page_file)
+        else:
+            st.page_link(page_file, label=label)
 
 
 with st.sidebar:
@@ -70,13 +76,13 @@ if not st.session_state["chat"]:
             st.session_state["queued"] = example
             st.rerun()
 
-for message in st.session_state["chat"]:
+for number, message in enumerate(st.session_state["chat"]):
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message["role"] == "assistant":
             st.caption(f"Intent: {message['intent']}  |  answered in {message['seconds']:.1f} s")
             show_sources(message["sources"])
-            show_next_step(message["intent"])
+            show_next_step(message["intent"], f"next_step_{number}", message.get("prefill"))
 
 question = st.chat_input("Ask about your policy ...") or st.session_state.pop("queued", None)
 if question:
@@ -91,9 +97,10 @@ if question:
             st.warning("The AI service had a problem, so the closest policy passages are shown instead.")
         st.caption(f"Intent: {result['intent']}  |  answered in {result['seconds']:.1f} s")
         show_sources(result["sources"])
-        show_next_step(result["intent"])
+        prefill = quote_ui.prefill_from_question(question) if result["intent"] == "quotation" else None
+        show_next_step(result["intent"], f"next_step_{len(st.session_state['chat'])}", prefill)
     st.session_state["chat"].append({"role": "assistant", "content": result["answer"], "intent": result["intent"],
-                                     "seconds": result["seconds"], "sources": result["sources"]})
+                                     "seconds": result["seconds"], "sources": result["sources"], "prefill": prefill})
     try:    # every question and answer is saved for the manager (chat_logs table)
         used = "; ".join(f"{s['source']} p.{s['page']}" for s in result["sources"][:3])
         db.save_chat_log(user["id"], result["intent"], question, result["answer"], used)

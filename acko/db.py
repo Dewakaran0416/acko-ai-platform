@@ -202,3 +202,11 @@ def save_claim(user_id: str | uuid.UUID, **fields) -> Claim:
         session.add(row)
         session.flush()
         return row
+
+
+def recent_quotations(user_id: str | uuid.UUID, limit: int = 5) -> list[Quotation]:
+    """The newest quotations of one customer (shown under the quote form)."""
+    with session_scope() as session:
+        query = (select(Quotation).where(Quotation.user_id == _as_uuid(user_id))
+                 .order_by(Quotation.created_at.desc()).limit(limit))
+        return list(session.scalars(query))
