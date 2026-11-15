@@ -1,25 +1,38 @@
+# Acko AI Platform - the packages the web app, the scripts and the models need (Python 3.11).
+#
+#   pip install -r requirements.txt -c constraints.txt
+#
+# The line above also fixes the exact version of every helper package (constraints.txt), so the Docker image on AWS
+# gets exactly the packages that were tested. Notebook tools are in requirements-dev.txt.
+
+# web app
 streamlit==1.67.0
+plotly==7.1.0
+altair==6.3.0
+matplotlib==3.11.2
+pillow==13.0.0
+pypdf==7.0.0
+
+# models and explanations
 pandas==3.1.1
 numpy==2.4.6
 scikit-learn==1.9.1
-joblib==1.6.0
+joblib
 shap==0.51.0
-matplotlib==3.11.2
-plotly==7.1.0
-altair==6.3.0
+
+# database (SQLite on a laptop, PostgreSQL on AWS RDS)
 sqlalchemy==2.1.8
-psycopg2-binary==2.9.13
-python-dotenv==1.2.4
-boto3==1.43.126
+psycopg2-binary
+
+# chatbot: vector store, LangChain, LangGraph and Gemini
 chromadb==1.5.9
-langchain==1.4.9
-langchain-community==0.4.2
-langchain-text-splitters==1.1.3
-langchain-chroma==1.1.0
-langchain-google-genai==4.4.3
-langgraph==1.2.20
-pypdf==7.0.0
-pillow==13.0.0
-tzdata==2026.6
-langchain-core==1.7.6
-google-genai==3.0.0
+langchain-core
+langchain-community
+langchain-text-splitters
+langchain-google-genai
+langgraph
+
+# settings, time zones and AWS
+python-dotenv
+tzdata
+boto3
