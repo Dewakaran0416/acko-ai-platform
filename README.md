@@ -1,16 +1,16 @@
 # Acko AI Platform
 
 An insurance assistant built as one web app (Streamlit). A customer can ask questions about Acko policies, get a motor
-insurance quote, and file a claim with a damage photo and a claim form. Three modules are built and can be deployed on AWS:
+insurance quote, and file a claim with a damage photo and a claim form. A manager can follow the claims on a live dashboard. Four modules are built and can be deployed on AWS:
 
 | Module | Page in the app | What it does |
 |---|---|---|
 | 1. Policy chatbot (RAG) | Policy Chatbot | Answers questions from 3 Acko policy PDFs with Google Gemini, shows the source page, and sends the customer to the quote or claim page when that is what they ask for. |
 | 2. Premium quote predictor | Get a Quote | Machine-learning model (car and bike) that estimates the yearly premium, explains it with SHAP (rupees per factor) and saves every quote in the database. |
 | 3. AI claims engine | File a Claim | Gemini Vision reads the damage photo and the claim form (PDF). Four models give the claim amount and the approval probability. The photo and the form go to Amazon S3, the claim to the database. |
+| 4. Management dashboard | Dashboard (manager sign-in only) | Live numbers from the database: claims today, this week and this month, approval rate, average payout and premium, the cities with the most claims (bar chart), the claim trend (line chart), the 10 questions customers asked most this week and the claims waiting for a human decision. A period filter and a Refresh button read the database again. |
 
-Not built: Module 4 (analytics dashboard) and Module 5 (manager assistant, natural language to SQL). The app already
-has the places for them (`views/dashboard.py`, `views/assistant.py`, shown only to a signed-in manager).
+Not built: Module 5 (manager assistant, natural language to SQL). The app already has its place (`views/assistant.py`, shown only to a signed-in manager).
 
 ## Results at a glance
 
@@ -34,6 +34,7 @@ flowchart LR
     APP --> RAG["Module 1: RAG chatbot"]
     APP --> QUO["Module 2: quote model"]
     APP --> CLM["Module 3: claims engine"]
+    APP --> DSH["Module 4: manager dashboard"]
     RAG --> CHROMA[("ChromaDB vector store")]
     RAG --> GEM["Google Gemini API"]
     CLM --> GEM
@@ -42,6 +43,7 @@ flowchart LR
     MOD <-->|"fetched when the app starts"| S3[("Amazon S3: models, damage photos, claim forms")]
     CLM -->|"damage.jpg and form.pdf"| S3
     APP -->|"SQLAlchemy, SSL"| DB[("PostgreSQL on RDS, SQLite on a laptop")]
+    DSH -->|"live queries"| DB
 ```
 
 - **Chatbot:** the 3 PDFs are cut into 536 chunks, plus 119 FAQ questions, and stored in ChromaDB (default ONNX MiniLM
@@ -53,20 +55,21 @@ flowchart LR
   form. The customer checks every detail. Two models per vehicle type (amount, approval) give the estimate. A claim at or
   above the approval threshold (default 0.5) is `approved`, every other claim is `review`: the machine never rejects.
   Files are saved under `claims/{user_id}/{claim_id}/damage.jpg` and `form.pdf`.
-- **Database:** four tables (`users`, `quotations`, `claims`, `chat_logs`). SQLite on a laptop, PostgreSQL on AWS RDS. The PostgreSQL schema is in `docs/schema_postgresql.sql`.
+- **Dashboard:** shown only after the manager sign-in. Every number is a live query on the four tables (`acko/dashboard_data.py`, plain SQL that gives the same answer on SQLite and PostgreSQL) and nothing is cached, so a new claim shows as soon as the page reads the database again (Refresh button). It shows claims today, in the last 7 days and this month, the approval rate, the average payout and premium, the cities with the most claims, the claim trend, the top 10 chatbot questions of the week and the claims waiting for human review. The period filter changes everything except the three claim counters and the question list. A new database is empty, so `python -m scripts.seed_demo_data` can add clearly labelled demo customers ("Demo Customer N") with quotations, claims and chatbot questions, all priced and decided by the trained models, so that the dashboard has something to show; `--remove` deletes them again.
+- **Database:** four tables (`users`, `quotations`, `claims`, `chat_logs`). SQLite on a laptop, PostgreSQL on AWS RDS. The PostgreSQL schema is in `docs/schema_postgresql.sql`, and a few real sample rows of every table (the people made anonymous) are in `docs/sample_records.sql`: `psql -f docs/schema_postgresql.sql -f docs/sample_records.sql` builds a small sample database.
 
 ## Project layout
 
 ```
 app.py                 the web app (sign-in, menu, pages)
-views/                 one file per page: chat.py, quote.py, claims.py
-acko/                  the code behind the pages: rag, quote, claims, vision, storage, db, model_store, config
+views/                 one file per page: chat.py, quote.py, claims.py, dashboard.py (manager only)
+acko/                  the code behind the pages: rag, quote, claims, vision, storage, db, dashboard_data, model_store, config
 scripts/               one-off commands, run as: python -m scripts.<name>
 models/                the trained models (.pkl)
 data/policy_pdfs/      the 3 Acko policy PDFs     data/eval/   the evaluation questions
 notebooks/             one notebook per ML model (quote, car amount, car approval, bike amount, bike approval)
 reports/               evaluation reports, SHAP pictures (reports/shap/)
-docs/                  the PostgreSQL schema (schema_postgresql.sql)
+docs/                  the PostgreSQL schema (schema_postgresql.sql) and the sample records (sample_records.sql)
 deploy/                AWS scripts: acko_aws_foundation.sh (run in CloudShell), ec2_deploy.sh (run on the server)
 Dockerfile             the image of the app          requirements.txt + constraints.txt   the packages
 ```
@@ -94,6 +97,7 @@ With `S3_BUCKET` empty, claim files are kept in the folder `uploads/`. With `DB_
 Useful commands: `python -m scripts.ask "What is the waiting period for health insurance?"` (chatbot in the terminal),
 `python -m scripts.show_quotes` and `python -m scripts.show_claims` (the newest rows in the database),
 `python -m scripts.check_deploy` (checks settings, database, S3, models, vector store and Gemini in one go).
+The Dashboard page is only for the manager: put a password in `MANAGER_PASSWORD` in `.env`, then use "Manager sign-in" on the first page.
 
 ### Use Amazon S3 from your PC (optional)
 
@@ -125,6 +129,9 @@ python -m scripts.sync_models upload                         # puts the models o
 | `python -m scripts.test_storage` | file storage on S3 (or `uploads/`) from end to end |
 | `python -m scripts.init_db` | creates the 4 tables (safe to run again) and proves that every table can be written |
 | `python -m scripts.export_schema` | writes `docs/schema_postgresql.sql` from the models in `acko/db.py` |
+| `python -m scripts.export_sample_records` | writes `docs/sample_records.sql`: the newest rows of every table, with names, e-mail addresses, phone numbers, policy numbers and registrations made anonymous |
+| `python -m scripts.check_dashboard` | every number on the dashboard equals the database (the same questions asked again with separate SQL) |
+| `python -m scripts.seed_demo_data` | optional: adds 24 demo customers ("Demo Customer N") with 160 quotations, 70 claims and 200 chatbot questions, priced and decided by the trained models, so that the dashboard has something to show. `--remove` deletes only them, `--refresh` moves their dates up to today |
 | `python -m scripts.check_deploy` | everything the platform needs works on this computer or server |
 
 ## Deploy on AWS (EC2 + RDS + S3, region ap-southeast-2 Sydney)
@@ -169,6 +176,7 @@ the deployment check and prints the public address: `http://<fixed address>:8501
 | app log | `sudo docker logs --tail 100 acko` (the image build log is `/var/log/acko-build.log`) |
 | update after a `git push` | `cd /opt/acko/src && sudo git pull && sudo bash deploy/ec2_deploy.sh` |
 | change the secrets | `sudo bash /opt/acko/src/deploy/ec2_deploy.sh --new-secrets` |
+| fill the dashboard with demo rows (optional) | `sudo docker exec acko python -m scripts.seed_demo_data` (take them away with `--remove`) |
 
 How the pieces use AWS:
 
@@ -214,7 +222,8 @@ A `.env` file on a laptop, `/opt/acko/acko.env` on the server. Real environment 
 - The damage photo test did not reach the brief's target (6 of 9 right in the first run), and Gemini's reading of a photo can be wrong: the customer can correct every detail before saving.
 - SHAP uses the Permutation explainer (additive), not TreeExplainer. It explains how the model reaches its number, not why a real insurer would pay.
 - One server, no automatic scaling, RDS backups kept 1 day, region Sydney (a real Indian insurer would keep customer data in India).
-- Modules 4 and 5 are not built.
+- Module 5 (manager assistant) is not built.
+- Dashboard: it reads the database when the page opens, when the period changes and when Refresh is pressed (there is no automatic refresh). "This week" means the last 7 days. Managers share one password (there are no personal manager accounts). The review list shows every claim that the model sent to review (a low approval probability is a reason to look at a claim, not proof of fraud); the app does not record what the manager decides. Demo rows added with `python -m scripts.seed_demo_data` are ordinary rows in the tables, so the dashboard counts them; their customers are called Demo Customer N and `--remove` deletes them.
 
 ## Tools and AI assistance
 
