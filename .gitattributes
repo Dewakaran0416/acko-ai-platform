@@ -1,0 +1,7 @@
+# Keep Linux line endings (LF) in files that Linux or Docker reads, even though they are written on Windows.
+*.sh text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+requirements*.txt text eol=lf
+constraints.txt text eol=lf
+*.pkl binary

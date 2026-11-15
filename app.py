@@ -10,7 +10,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from acko import config, db
+from acko import config, db, model_store
 
 st.set_page_config(page_title="Acko AI Platform", page_icon=":material/shield:", layout="wide")
 
@@ -28,6 +28,13 @@ PAGES = [   # (file, menu title, icon, only for the manager?)
 def prepare_database() -> bool:
     db.init_db()            # creates the four tables if they are missing (safe to repeat)
     return True
+
+
+@st.cache_resource
+def prepare_models() -> list:
+    """On the AWS server (MODELS_FROM_S3=true) the trained models are fetched from Amazon S3 once, when the app starts.
+    On a laptop nothing is downloaded, so a model you have just trained is never replaced by an older copy."""
+    return model_store.download() if model_store.wanted() else []
 
 
 def sign_in(user, role: str) -> None:
@@ -64,6 +71,7 @@ def login_page() -> None:
 
 
 prepare_database()
+models_note = model_store.describe(prepare_models())       # '' on a laptop
 user = st.session_state.get("user")
 if user is None:
     page = st.navigation([st.Page(login_page, title="Sign in", icon=":material/login:")])
@@ -74,6 +82,8 @@ else:
     page = st.navigation([st.Page(file, title=title, icon=icon) for file, title, icon in allowed])
     with st.sidebar:
         st.caption(f"Signed in as **{user['name']}** ({user['role']})")
+        if models_note:
+            st.caption(models_note)
         if st.button("Sign out"):
             st.session_state.clear()
             st.rerun()

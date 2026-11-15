@@ -1,0 +1,5 @@
+# Extra packages only for building the notebooks (python -m scripts.make_notebooks). The web app does not need them.
+-r requirements.txt
+nbformat
+nbclient
+ipykernel

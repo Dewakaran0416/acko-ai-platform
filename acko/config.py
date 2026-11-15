@@ -88,4 +88,4 @@ MANAGER_EMAIL = env("MANAGER_EMAIL", "manager@acko.local")
 
 # --------------------------------------------------------------------------- AWS
 S3_BUCKET = env("S3_BUCKET")
-AWS_REGION = env("AWS_REGION") or env("AWS_DEFAULT_REGION") or "ap-south-1"
+AWS_REGION = env("AWS_REGION") or env("AWS_DEFAULT_REGION") or "ap-southeast-2"

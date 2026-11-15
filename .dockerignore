@@ -1,0 +1,29 @@
+# What is NOT copied into the Docker image (paths are relative to the project folder).
+
+# Secrets and local settings: the server gets its settings as environment variables
+.env
+.env.*
+!.env.example
+*.pem
+.streamlit/secrets.toml
+
+# Git and Python leftovers
+.git
+.gitignore
+.gitattributes
+venv/
+.venv/
+**/__pycache__
+**/*.pyc
+**/.ipynb_checkpoints
+.pytest_cache
+
+# Things the image builds or does not need while the app runs
+acko.db
+chroma_db/
+uploads/
+data/raw/
+data/eval/
+notebooks/
+reports/
+deploy/

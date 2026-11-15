@@ -15,8 +15,9 @@ from datetime import date, datetime
 from typing import Iterator
 
 from sqlalchemy import (Date, DateTime, Float, ForeignKey, Integer, String, Text, Uuid,
-                        create_engine, event, select)
+                        create_engine, event, inspect, select, text)
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from acko import config
@@ -78,6 +79,9 @@ class Claim(Base):
     vehicle_make: Mapped[str | None] = mapped_column(String(50), nullable=True)
     vehicle_model: Mapped[str | None] = mapped_column(String(80), nullable=True)
     idv: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # the two details of the claim form that the brief asks Gemini to read (added in Module 3, see NEW_COLUMNS below):
+    vehicle_registration: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    damage_description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local, index=True)
 
 
@@ -142,9 +146,36 @@ def session_scope() -> Iterator[Session]:
         session.close()
 
 
+# Columns that were added to a table after the first version of this project. create_all() never changes a table that
+# already exists, so init_db() adds them with ALTER TABLE (the same statement works on SQLite and on PostgreSQL).
+# Names and types come from this list only, never from user input.
+NEW_COLUMNS = {"claims": {"vehicle_registration": "VARCHAR(20)", "damage_description": "VARCHAR(500)"}}
+
+
+def ensure_columns() -> list[str]:
+    """Add the columns an older database is missing. Returns what was added, for example ['claims.vehicle_registration']."""
+    engine = get_engine()
+    added = []
+    for table, columns in NEW_COLUMNS.items():
+        for name, sql_type in columns.items():
+            if name in {column["name"] for column in inspect(engine).get_columns(table)}:
+                continue
+            try:
+                with engine.begin() as connection:
+                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}"))
+            except (OperationalError, ProgrammingError):
+                # another process may have added it a moment ago: look again, and only fail when it is really missing
+                if name not in {column["name"] for column in inspect(engine).get_columns(table)}:
+                    raise
+            else:
+                added.append(f"{table}.{name}")
+    return added
+
+
 def init_db() -> None:
-    """Create all four tables (safe to run again)."""
+    """Create all four tables, and add the newer columns to tables that already exist (safe to run again)."""
     Base.metadata.create_all(get_engine())
+    ensure_columns()
 
 
 def describe_database() -> str:
@@ -209,4 +240,12 @@ def recent_quotations(user_id: str | uuid.UUID, limit: int = 5) -> list[Quotatio
     with session_scope() as session:
         query = (select(Quotation).where(Quotation.user_id == _as_uuid(user_id))
                  .order_by(Quotation.created_at.desc()).limit(limit))
+        return list(session.scalars(query))
+
+
+def recent_claims(user_id: str | uuid.UUID, limit: int = 5) -> list[Claim]:
+    """The newest claims of one customer (shown under the claim form)."""
+    with session_scope() as session:
+        query = (select(Claim).where(Claim.user_id == _as_uuid(user_id))
+                 .order_by(Claim.created_at.desc()).limit(limit))
         return list(session.scalars(query))

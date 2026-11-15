@@ -1,13 +1,16 @@
-"""Step 7: build the project's Jupyter notebooks from their text source and run them, so each one is saved WITH its output.
+"""Build the project's Jupyter notebooks from their text source and run them, so each one is saved WITH its output.
 
-    python -m scripts.make_notebooks quote      build and run notebooks/02_quote_model.ipynb
-    python -m scripts.make_notebooks            build and run every notebook that has a source file
+    python -m scripts.make_notebooks quote          build and run notebooks/02_quote_model.ipynb
+    python -m scripts.make_notebooks car-amount     build and run one claims notebook (car-amount, car-approval, bike-amount, bike-approval)
+    python -m scripts.make_notebooks claims         build and run the four claims notebooks, one after the other
+    python -m scripts.make_notebooks                build and run every notebook that has a source file
 
 The source of a notebook is a plain text file in notebooks/source/. Cells are separated by lines that start with "# %%";
 a cell that starts with "# %% [markdown]" is text (each line begins with "# "), every other cell is code.
 Plain text is easy to read and to compare in Git; the .ipynb file that is built from it holds the pictures and tables.
 
-Running a notebook never changes models/ or reports/. If a cell fails, the script prints the end of the error and writes nothing.
+Running a notebook never changes models/. The four claims notebooks also save their SHAP pictures in reports/shap/ (each notebook
+says so). If a cell fails, the script prints the end of the error and writes nothing.
 """
 from __future__ import annotations
 
@@ -25,7 +28,10 @@ from acko import config
 
 NOTEBOOK_DIR = config.ROOT / "notebooks"
 SOURCE_DIR = NOTEBOOK_DIR / "source"
-NOTEBOOKS = {"quote": "02_quote_model"}        # name on the command line -> file name (the claims notebooks are added later)
+NOTEBOOKS = {"quote": "02_quote_model",         # name on the command line -> file name
+             "car-amount": "03_claims_car_amount", "car-approval": "04_claims_car_approval",
+             "bike-amount": "05_claims_bike_amount", "bike-approval": "06_claims_bike_approval"}
+GROUPS = {"claims": ["car-amount", "car-approval", "bike-amount", "bike-approval"]}       # one name for several notebooks
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
 
@@ -91,12 +97,12 @@ def run(name: str) -> int:
 
 
 def main(argv: list[str]) -> int:
-    names = argv or list(NOTEBOOKS)
+    names = [single for name in argv for single in GROUPS.get(name, [name])] or list(NOTEBOOKS)
     unknown = [name for name in names if name not in NOTEBOOKS]
     if unknown:
-        print(f"Unknown notebook: {', '.join(unknown)}. Choose from: {', '.join(NOTEBOOKS)}")
+        print(f"Unknown notebook: {', '.join(unknown)}. Choose from: {', '.join(list(NOTEBOOKS) + list(GROUPS))}")
         return 2
-    return max(run(name) for name in names)
+    return max(run(name) for name in names)            # every notebook is run, even if an earlier one failed
 
 
 if __name__ == "__main__":
